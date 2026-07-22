@@ -80,16 +80,51 @@ def query_solver():
 
     return list(set(safe_moves)),list(set(mine_moves))
 
-
 # =========================================================================
 # Section 3: Uncertainty Handling Strategy (Smart Guess) - Optional/Bonus
 # =========================================================================
 
-def get_safest_guess(agent_board, rows, cols):
+def get_safest_guess(agent_board,rows,cols):
     """
-    Task 5 (Optional): Calculate the probability of cells being mines during a logical deadlock.
+    Task 5: Calculate the probability of cells being mines during a logical deadlock.
     """
-    return None
+    unknowns=[pos for pos,val in agent_board.items() if val==AGENT_UNKNOWN]
+
+    if not unknowns:
+        return None
+
+    probs={pos:0.0 for pos in unknowns}
+
+    directions=[(-1,-1),(-1,0),(-1,1),
+                (0,-1),(0,1),
+                (1,-1),(1,0),(1,1)]
+
+    for (r,c),val in agent_board.items():
+
+        if val>0:
+            hidden=[]
+            flags=0
+
+            for dr,dc in directions:
+                nr,nc=r+dr,c+dc
+
+                if 0<=nr<rows and 0<=nc<cols:
+
+                    if agent_board[(nr,nc)]==AGENT_UNKNOWN:
+                        hidden.append((nr,nc))
+
+                    elif agent_board[(nr,nc)]==AGENT_FLAGGED:
+                        flags+=1
+
+            if hidden:
+                p=(val-flags)/len(hidden)
+
+                for h in hidden:
+                    probs[h]=max(probs[h],p)
+
+    best_guess=min(probs.keys(),key=lambda k:probs[k])
+
+    return best_guess
 
 # =========================================================================
 # Section 4: Main Agent Loop
