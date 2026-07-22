@@ -165,7 +165,39 @@ def prolog_solver(game):
 
         # 3. Apply the extracted logical actions to the game environment and update memory
         # Hint: Reveal safe cells first, then flag the mine cells.
-        
+        for r,c in safe_moves:
+
+            if agent_board[(r,c)]==AGENT_UNKNOWN:
+                val=game.reveal(r,c)
+                agent_board[(r,c)]=val if val is not None else -1
+                move_made=True
+
+        # Flag Mine Cells
+        for r,c in mine_moves:
+
+            if agent_board[(r,c)]==AGENT_UNKNOWN:
+                game.flag(r,c)
+                agent_board[(r,c)]=AGENT_FLAGGED
+                move_made=True
+
+        # Deadlock management
+        if not move_made and not game.game_over:
+
+            print("Logical deadlock! Attempting guess...")
+
+            guess=get_safest_guess(agent_board,game.rows,game.cols)
+
+            if guess:
+                r,c=guess
+                print(f"Guessing cell ({r}, {c})")
+
+                val=game.reveal(r,c)
+                agent_board[(r,c)]=val if val is not None else -1
+
+            else:
+                print("No more available moves!")
+                break
+
         # 4. Deadlock management (if no deterministic logical move is found)
         if not move_made and not game.game_over:
             print("Logical deadlock! Attempting guess...")
@@ -186,5 +218,5 @@ def prolog_solver(game):
 if __name__ == "__main__":
     # Default settings based on the first scenario (Simple level) in the evaluation table
     # Note: auto_flood_fill must be False to preserve the encapsulation of the agent's memory.
-    ms = MineSweeper(rows=9, cols=9, mines=10, seed=99, auto_flood_fill=False)
+    ms = MineSweeper(rows=9, cols=9, mines=9, seed=99 , auto_flood_fill=False)
     prolog_solver(ms)
