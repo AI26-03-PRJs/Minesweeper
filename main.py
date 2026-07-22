@@ -8,8 +8,7 @@ from src.minesweeper import MineSweeper
 # Section 1: Define First-Order Logic Terms (FOL Terms)
 # Students should define the required terms, facts, and rules for pyDatalog here.
 # =========================================================================
-# Hint: pyDatalog.create_terms('X, Y, R, C, ...')
-
+pyDatalog.create_terms('R, C, Val, H, F, R2, C2, CellInfo, IsHiddenNeighbor, Safe, Mine')
 
 # Suggested constants for the agent's internal memory (Shadow Board)
 AGENT_UNKNOWN = -1
@@ -20,39 +19,67 @@ AGENT_FLAGGED = -2
 # =========================================================================
 
 def init_static_facts(rows, cols):
-    """
-    Task 1: Generate static facts at the beginning of the game 
-    (e.g., adjacency relationships between cells).
-    """
-    pass
+    pyDatalog.clear()
+    pyDatalog.create_terms('R, C, Val, H, F, R2, C2, CellInfo, IsHiddenNeighbor, Safe, Mine')
 
 def init_rules():
-    """
-    Task 2: Define logical inference rules (Safety Rule and Danger Rule).
-    According to the project documentation, rules must be defined based on first-order logic.
-    """
-    # Safe(R2, C2) <= (...)
-    # Mine(R2, C2) <= (...)
-    pass
+    
+    Safe(R2,C2)<=CellInfo(R,C,Val,H,F) & (Val==F) & IsHiddenNeighbor(R,C,R2,C2)
+
+    Mine(R2,C2)<=CellInfo(R,C,Val,H,F) & (Val==H+F) & IsHiddenNeighbor(R,C,R2,C2)
+
 
 def update_knowledge_base(agent_board, rows, cols):
-    """
-    Task 3: Convert the agent's internal memory (agent_board) into dynamic facts in each turn.
-    Before adding new facts, facts from the previous turn must be cleared.
-    """
-    pass
+    CellInfo.clear()
+    IsHiddenNeighbor.clear()
+
+    directions=[(-1,-1),(-1,0),(-1,1),
+                (0,-1),        (0,1),
+                (1,-1),(1,0),(1,1)]
+
+    for (r,c),val in agent_board.items():
+        if val>=0:
+            hidden_neighbors=[]
+            flags=0
+
+            for dr,dc in directions:
+                nr,nc=r+dr,c+dc
+
+                if 0<=nr<rows and 0<=nc<cols:
+                    state=agent_board[(nr,nc)]
+
+                    if state==AGENT_UNKNOWN:
+                        hidden_neighbors.append((nr,nc))
+
+                    elif state==AGENT_FLAGGED:
+                        flags+=1
+
+            h_count=len(hidden_neighbors)
+
+            if h_count>0:
+                +CellInfo(r,c,val,h_count,flags)
+                for (nr,nc) in hidden_neighbors:
+                    +IsHiddenNeighbor(r,c,nr,nc)
+
 
 def query_solver():
-    """
-    Task 4: Query the inference engine to find safe cells and mines.
-    Output: Two lists containing the coordinates of safe cells and mine cells.
-    """
     safe_moves = []
     mine_moves = []
-    
-    # Code for querying Safe(R, C) and Mine(R, C)
-    
-    return safe_moves, mine_moves
+
+    ans_safe=Safe(R,C)
+
+    if ans_safe:
+        for r,c in ans_safe.data:
+            safe_moves.append((r,c))
+
+    ans_mine=Mine(R,C)
+
+    if ans_mine:
+        for r,c in ans_mine.data:
+            mine_moves.append((r,c))
+
+    return list(set(safe_moves)),list(set(mine_moves))
+
 
 # =========================================================================
 # Section 3: Uncertainty Handling Strategy (Smart Guess) - Optional/Bonus
